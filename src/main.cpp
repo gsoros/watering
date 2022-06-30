@@ -9,7 +9,7 @@ const uint8_t pinTankVcc = 2;      // D2
 const uint8_t pinTankSignal = 14;  // A0 47k pulldown
 const uint8_t pinSoilVcc = 3;      // D3
 const uint8_t pinSoilSignal = 15;  // A1 47k pulldown
-const uint8_t pinRelay = 4;        // D4
+const uint8_t pinRelay = 5;        // D5
 
 const float tankThreshold = 1.0f;
 const float soilThreshold = 2.0f;
@@ -42,6 +42,8 @@ void setup() {
     pinMode(pinSoilVcc, OUTPUT);
     digitalWrite(pinSoilVcc, LOW);
     pinMode(pinSoilSignal, INPUT);
+    pinMode(pinRelay, OUTPUT);
+    digitalWrite(pinRelay, LOW);
     log("minute: %lu secs, hour: %lu minutes, day: %lu hours, rollover: %lu days",
         MIN / SEC,
         HOUR / MIN,
@@ -67,10 +69,11 @@ void loop() {
         water();
     }
     digitalWrite(LED_BUILTIN, LOW);
-    unsigned long loopTime = millis() - t;
-    if (loopTime < checkPeriodTime) {
-        delay(checkPeriodTime - loopTime);
-    }
+    // unsigned long loopTime = millis() - t;
+    //  if (loopTime < checkPeriodTime) {
+    //   delay(checkPeriodTime - loopTime);
+    // }
+    delay(checkPeriodTime);
 }
 
 void checkPeriod(unsigned long t) {
