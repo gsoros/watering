@@ -14,10 +14,10 @@ const uint8_t pinRelay = 4;        // D4
 const float tankThreshold = 1.0f;
 const float soilThreshold = 2.0f;
 
-const unsigned long checkPeriodTime = 3 * SEC;
-const unsigned long wateringTime = 1 * SEC;
-const unsigned long limitPeriodTime = 15 * SEC;
-const unsigned int limitAmount = 3;
+const unsigned long checkPeriodTime = 30 * MIN;
+const unsigned long wateringTime = 3 * SEC;
+const unsigned long limitPeriodTime = 24 * HOUR;
+const unsigned int limitAmount = 10;
 
 unsigned int waterings = 0;
 unsigned long periodStartTime = 0;
