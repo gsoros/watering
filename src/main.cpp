@@ -29,6 +29,7 @@ bool soilIsDry();
 void water();
 void waterStart();
 void waterStop();
+char *timeStr(unsigned long, char *, size_t);
 void log(const char *, ...);
 float voltage(uint8_t, uint8_t, uint8_t numMeasurements = 100);
 
@@ -46,11 +47,21 @@ void setup() {
     pinMode(pinSoilSignal, INPUT);
     pinMode(pinRelay, OUTPUT);
     digitalWrite(pinRelay, LOW);
-    log("minute: %lu secs, hour: %lu minutes, day: %lu hours, rollover: %lu days",
+    char buf[3][32];
+    log("\n\nwelcome\n\n"
+        "minute: %lu secs, hour: %lu minutes, day: %lu hours, rollover: %lu days\n"
+        "checkPeriodTime: %s\n"
+        "wateringTime:    %s\n"
+        "limitPeriodTime: %s\n"
+        "limitAmount:     %d\n\n",
         MIN / SEC,
         HOUR / MIN,
         DAY / HOUR,
-        UINT32_MAX / DAY);
+        UINT32_MAX / DAY,
+        timeStr(checkPeriodTime, buf[0], 32),
+        timeStr(wateringTime, buf[1], 32),
+        timeStr(limitPeriodTime, buf[2], 32),
+        limitAmount);
 }
 
 void loop() {
@@ -66,7 +77,9 @@ void loop() {
     log("check");
     digitalWrite(LED_BUILTIN, HIGH);
     checkPeriod(t);
-    if (!limitIsReached() && !tankIsEmpty() && soilIsDry()) {
+    bool tankEmpty = tankIsEmpty();
+    delay(50);
+    if (!limitIsReached() && !tankEmpty && soilIsDry()) {
         water();
     }
     digitalWrite(LED_BUILTIN, LOW);
@@ -95,8 +108,9 @@ bool limitIsReached() {
 
 bool tankIsEmpty() {
     float v = voltage(pinTankVcc, pinTankSignal);
-    log("tank %.2fV", v);
-    return v < tankThreshold;
+    bool empty = v < tankThreshold;
+    log("tank %.2fV %s", v, empty ? "empty" : "ok");
+    return empty;
     // if (1 < random(10)) {
     //     log("tank ok");
     //     return false;
@@ -107,8 +121,9 @@ bool tankIsEmpty() {
 
 bool soilIsDry() {
     float v = voltage(pinSoilVcc, pinSoilSignal);
-    log("soil %.2fV", v);
-    return v < soilThreshold;
+    bool dry = v < soilThreshold;
+    log("soil %.2fV %s", v, dry ? "dry" : "wet");
+    return dry;
     // if (7 < random(10)) {
     //     log("soil wet");
     //     return false;
@@ -127,23 +142,27 @@ void water() {
 
 void waterStart() {
     log("waterStart");
-    delay(50);
     digitalWrite(pinRelay, HIGH);
 }
 
 void waterStop() {
     log("waterStop");
-    delay(50);
     digitalWrite(pinRelay, LOW);
+}
+
+char *timeStr(unsigned long t, char *buf, size_t size) {
+    snprintf(buf, size, "%lu:%02lu:%02lu:%02lu:%03lu",
+             t / DAY, (t / HOUR) % 24, (t / MIN) % 60, (t / SEC) % 60, t % 1000);
+    return buf;
 }
 
 void log(const char *fmt, ...) {
     static const uint8_t len = 255;
     char out[len];
     char *p = out;
+    char tbuf[32];
     unsigned long t = millis();
-    snprintf(p, len, "%2lu:%02lu:%02lu:%02lu:%03lu ",
-             t / DAY, (t / HOUR) % 24, (t / MIN) % 60, (t / SEC) % 60, t % 1000);
+    snprintf(p, len, "%s ", timeStr(t, tbuf, 32));
     uint8_t timeLen = strlen(p);
     if (len <= timeLen) {
         Serial.println("log overflow");
