@@ -1,22 +1,22 @@
 #include <Arduino.h>
 
-#define SEC 0x3e8UL
-#define MIN 0xea60UL
-#define HOUR 0x36ee80UL
-#define DAY 0x5265c00UL
+#define SEC 1000UL
+#define MIN (SEC * 60UL)
+#define HOUR (MIN * 60UL)
+#define DAY (HOUR * 24UL)
 
 const uint8_t pinTankVcc = 2;      // D2
 const uint8_t pinTankSignal = 14;  // A0 47k pulldown
 const uint8_t pinSoilVcc = 3;      // D3
 const uint8_t pinSoilSignal = 15;  // A1 47k pulldown
-const uint8_t pinRelay = 5;        // D5
+const uint8_t pinRelay = 4;        // D4
 
 const float tankThreshold = 1.0f;
 const float soilThreshold = 2.0f;
 
 const unsigned long checkPeriodTime = 3 * SEC;
 const unsigned long wateringTime = 1 * SEC;
-const unsigned long limitPeriodTime = 30 * SEC;
+const unsigned long limitPeriodTime = 15 * SEC;
 const unsigned int limitAmount = 3;
 
 unsigned int waterings = 0;
@@ -27,6 +27,8 @@ bool limitIsReached();
 bool tankIsEmpty();
 bool soilIsDry();
 void water();
+void waterStart();
+void waterStop();
 void log(const char *, ...);
 float voltage(uint8_t, uint8_t, uint8_t numMeasurements = 100);
 
@@ -61,8 +63,7 @@ void loop() {
     // return;
 
     unsigned long t = millis();
-    log("check %lu:%02lu:%02lu:%02lu",
-        t / DAY, t / HOUR, t / MIN % 60, t / SEC % 60);
+    log("check");
     digitalWrite(LED_BUILTIN, HIGH);
     checkPeriod(t);
     if (!limitIsReached() && !tankIsEmpty() && soilIsDry()) {
@@ -118,17 +119,39 @@ bool soilIsDry() {
 
 void water() {
     log("watering %d", waterings);
-    digitalWrite(pinRelay, HIGH);
+    waterStart();
     delay(wateringTime);
-    digitalWrite(pinRelay, LOW);
+    waterStop();
     waterings++;
 }
 
+void waterStart() {
+    log("waterStart");
+    delay(50);
+    digitalWrite(pinRelay, HIGH);
+}
+
+void waterStop() {
+    log("waterStop");
+    delay(50);
+    digitalWrite(pinRelay, LOW);
+}
+
 void log(const char *fmt, ...) {
-    static char out[256];
+    static const uint8_t len = 255;
+    char out[len];
+    char *p = out;
+    unsigned long t = millis();
+    snprintf(p, len, "%2lu:%02lu:%02lu:%02lu:%03lu ",
+             t / DAY, (t / HOUR) % 24, (t / MIN) % 60, (t / SEC) % 60, t % 1000);
+    uint8_t timeLen = strlen(p);
+    if (len <= timeLen) {
+        Serial.println("log overflow");
+        return;
+    }
     va_list argp;
     va_start(argp, fmt);
-    vsnprintf(out, 256, fmt, argp);
+    vsnprintf(p + timeLen, sizeof(out) - timeLen - 1, fmt, argp);
     va_end(argp);
     Serial.println(out);
 }
