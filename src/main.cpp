@@ -17,7 +17,12 @@ const float soilThreshold = 2.0f;
 const unsigned long checkPeriodTime = 30 * MIN;
 const unsigned long wateringTime = 3 * SEC;
 const unsigned long limitPeriodTime = 24 * HOUR;
-const unsigned int limitAmount = 10;
+const unsigned int limitAmount = 3;
+
+// const unsigned long checkPeriodTime = 10 * SEC;
+// const unsigned long wateringTime = 3 * SEC;
+// const unsigned long limitPeriodTime = 60 * SEC;
+// const unsigned int limitAmount = 3;
 
 unsigned int waterings = 0;
 unsigned long periodStartTime = 0;
